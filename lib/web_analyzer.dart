@@ -37,7 +37,7 @@ class WebVideoInfo extends WebImageInfo {
 class WebAnalyzer {
   static final Map<String, InfoBase> _map = {};
   static final RegExp _bodyReg =
-      RegExp(r"<body[^>]*>([\s\S]*?)<\/body>", caseSensitive: false);
+  RegExp(r"<body[^>]*>([\s\S]*?)<\/body>", caseSensitive: false);
   static final RegExp _htmlReg = RegExp(
       r"(<head[^>]*>([\s\S]*?)<\/head>)|(<script[^>]*>([\s\S]*?)<\/script>)|(<style[^>]*>([\s\S]*?)<\/style>)|(<[^>]+>)|(<link[^>]*>([\s\S]*?)<\/link>)|(<[^>]+>)",
       caseSensitive: false);
@@ -46,7 +46,7 @@ class WebAnalyzer {
       caseSensitive: false,
       dotAll: true);
   static final RegExp _titleReg =
-      RegExp("(title|icon|description|image)", caseSensitive: false);
+  RegExp("(title|icon|description|image)", caseSensitive: false);
   static final RegExp _lineReg = RegExp(r"[\n\r]|&nbsp;|&gt;");
   static final RegExp _spaceReg = RegExp(r"\s+");
 
@@ -71,8 +71,8 @@ class WebAnalyzer {
   /// return [InfoBase]
   static Future<InfoBase> getInfo(String url,
       {Duration cache = const Duration(hours: 24),
-      bool multimedia = true,
-      bool useMultithread = false}) async {
+        bool multimedia = true,
+        bool useMultithread = false}) async {
     // final start = DateTime.now();
 
     InfoBase info = getInfoFromCache(url);
@@ -168,7 +168,7 @@ class WebAnalyzer {
 
   static final Map<String, String> _cookies = {
     "weibo.com":
-        "YF-Page-G0=02467fca7cf40a590c28b8459d93fb95|1596707497|1596707497; SUB=_2AkMod12Af8NxqwJRmf8WxGjna49_ygnEieKeK6xbJRMxHRl-yT9kqlcftRB6A_dzb7xq29tqJiOUtDsy806R_ZoEGgwS; SUBP=0033WrSXqPxfM72-Ws9jqgMF55529P9D9W59fYdi4BXCzHNAH7GabuIJ"
+    "YF-Page-G0=02467fca7cf40a590c28b8459d93fb95|1596707497|1596707497; SUB=_2AkMod12Af8NxqwJRmf8WxGjna49_ygnEieKeK6xbJRMxHRl-yT9kqlcftRB6A_dzb7xq29tqJiOUtDsy806R_ZoEGgwS; SUBP=0033WrSXqPxfM72-Ws9jqgMF55529P9D9W59fYdi4BXCzHNAH7GabuIJ"
   };
 
   static bool _certificateCheck(X509Certificate cert, String host, int port) =>
@@ -179,7 +179,8 @@ class WebAnalyzer {
     if (url.contains("m.toutiaoimg.cn")) useDesktopAgent = false;
     Response res;
     final uri = Uri.parse(url);
-    final ioClient = HttpClient()..badCertificateCallback = _certificateCheck;
+    final ioClient = HttpClient()
+      ..badCertificateCallback = _certificateCheck;
     final client = IOClient(ioClient);
     final request = Request('GET', uri)
       ..followRedirects = false
@@ -211,13 +212,30 @@ class WebAnalyzer {
         return _requestUrl(url, count: count, cookie: cookie);
       }
     } else if (stream.statusCode == HttpStatus.ok) {
-      res = await Response.fromStream(stream);
-      if (uri.host == "m.tb.cn") {
-        final match = RegExp(r"var url = \'(.*)\'").firstMatch(res.body);
-        if (match != null) {
-          final newUrl = match.group(1);
-          if (newUrl != null) {
-            return _requestUrl(newUrl, count: count, cookie: cookie);
+      /// 超过 100m 的网页不解析
+      final contentLength = stream.headers["content-length"];
+      if (contentLength != null && contentLength.isNotEmpty) {
+        client.close();
+        if (double.parse(contentLength) > 100 * 1000 * 1000) return null;
+      }
+
+      final contentType = stream.headers["content-type"];
+
+      if (contentType.contains("image/") || contentType.contains("video/")) {
+        client.close();
+        return Response("body", stream.statusCode, headers: stream.headers);
+      }
+
+      if (contentType.contains("text/html") ||
+          contentType.contains("text/asp")) {
+        res = await Response.fromStream(stream);
+        if (uri.host == "m.tb.cn") {
+          final match = RegExp(r"var url = \'(.*)\'").firstMatch(res.body);
+          if (match != null) {
+            final newUrl = match.group(1);
+            if (newUrl != null) {
+              return _requestUrl(newUrl, count: count, cookie: cookie);
+            }
           }
         }
       }
@@ -227,8 +245,8 @@ class WebAnalyzer {
     return res;
   }
 
-  static Future<InfoBase> _getWebInfo(
-      Response response, String url, bool multimedia) async {
+  static Future<InfoBase> _getWebInfo(Response response, String url,
+      bool multimedia) async {
     if (response.statusCode == HttpStatus.ok) {
       String html;
       try {
@@ -264,7 +282,7 @@ class WebAnalyzer {
 
       String title = _analyzeTitle(document);
       String description =
-          _analyzeDescription(document, html)?.replaceAll(r"\x0a", " ");
+      _analyzeDescription(document, html)?.replaceAll(r"\x0a", " ");
       if (!isNotEmpty(title)) {
         title = description;
         description = null;
@@ -310,8 +328,8 @@ class WebAnalyzer {
     return null;
   }
 
-  static String _getMetaContent(
-      Document document, String property, String propertyValue) {
+  static String _getMetaContent(Document document, String property,
+      String propertyValue) {
     final meta = document.head.getElementsByTagName("meta");
     final ele = meta.firstWhere((e) => e.attributes[property] == propertyValue,
         orElse: () => null);
