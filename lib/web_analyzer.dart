@@ -58,6 +58,7 @@ class WebAnalyzer {
   /// Get web information
   /// return [InfoBase]
   static InfoBase getInfoFromCache(String url) {
+    return null;
     final InfoBase info = _map[url];
     if (info != null) {
       if (!info._timeout.isAfter(DateTime.now())) {
@@ -215,8 +216,10 @@ class WebAnalyzer {
       /// 超过 100m 的网页不解析
       final contentLength = stream.headers["content-length"];
       if (contentLength != null && contentLength.isNotEmpty) {
-        client.close();
-        if (double.parse(contentLength) > 100 * 1000 * 1000) return null;
+        if (double.parse(contentLength) > 100 * 1000 * 1000) {
+          client.close();
+          return null;
+        }
       }
 
       final contentType = stream.headers["content-type"];
